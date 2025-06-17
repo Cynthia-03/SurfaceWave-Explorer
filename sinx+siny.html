@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>3D Surface: z = sin(x) + sin(y)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: white;
+            color: black;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .controls {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .control-group label {
+            font-weight: 600;
+            font-size: 1em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .control-group input {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            padding: 12px;
+            color: white;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        .control-group input:focus {
+            background: rgba(255,255,255,0.3);
+            box-shadow: 0 0 15px rgba(255,255,255,0.3);
+            transform: scale(1.02);
+        }
+        
+        .control-group input::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            border: none;
+            border-radius: 12px;
+            padding: 14px 24px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+        }
+        
+        button.animate {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+        }
+        
+        button.wireframe {
+            background: linear-gradient(45deg, #ffecd2, #fcb69f);
+        }
+        
+        button.reset {
+            background: linear-gradient(45deg, #a8edea, #fed6e3);
+        }
+        
+        #canvas-container {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            border: 2px solid #000;
+        }
+        
+        canvas {
+            width: 100%;
+            height: 600px;
+            border-radius: 15px;
+            display: block;
+            cursor: grab;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        canvas:active {
+            cursor: grabbing;
+        }
+        
+        .info {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 25px;
+            text-align: center;
+            font-size: 1em;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .equation {
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌊 3D Surface Visualization</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>X Range (±)</label>
+                <input type="number" id="xRange" value="6" step="0.5" min="2" max="15">
+            </div>
+            
+            <div class="control-group">
+                <label>Y Range (±)</label>
+                <input type="number" id="yRange" value="6" step="0.5" min="2" max="15">
+            </div>
+            
+            <div class="control-group">
+                <label>X Frequency</label>
+                <input type="number" id="xFreq" value="1" step="0.1" min="0.1" max="3">
+            </div>
+            
+            <div class="control-group">
+                <label>Y Frequency</label>
+                <input type="number" id="yFreq" value="1" step="0.1" min="0.1" max="3">
+            </div>
+            
+            <div class="control-group">
+                <label>Resolution</label>
+                <input type="number" id="resolution" value="80" step="10" min="30" max="150">
+            </div>
+            
+            <div class="buttons">
+                <button id="update">Update</button>
+                <button id="animate" class="animate">Animate</button>
+                <button id="wireframe" class="wireframe">Wireframe</button>
+                <button id="reset" class="reset">Reset</button>
+            </div>
+        </div>
+        
+        <div id="canvas-container">
+            <canvas id="canvas"></canvas>
+        </div>
+        
+        <div class="info">
+            <div class="equation">z = sin(x) + sin(y)</div>
+            <p>Drag to rotate • Scroll to zoom • Adjust parameters to explore different wave patterns</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Scene setup
+        let scene, camera, renderer, surface, wireframeMesh;
+        let animationId = null;
+        let isAnimating = false;
+        let showWireframe = false;
+        let time = 0;
+        
+        // Control parameters
+        let xRange = 6;
+        let yRange = 6;
+        let xFreq = 1;
+        let yFreq = 1;
+        let resolution = 80;
+        
+        // Mouse control
+        let mouseDown = false;
+        let mouseX = 0, mouseY = 0;
+        let cameraAngleX = 0.3, cameraAngleY = 0.5;
+        let cameraDistance = 20;
+        
+        // Initialize scene
+        function initScene() {
+            const canvas = document.getElementById('canvas');
+            
+            // Create scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xffffff);
+            
+            // Add fog for depth
+            scene.fog = new THREE.Fog(0x1a1a2e, 15, 50);
+            
+            // Create camera
+            camera = new THREE.PerspectiveCamera(
+                60, 
+                canvas.clientWidth / canvas.clientHeight, 
+                0.1, 
+                100
+            );
+            
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: canvas, 
+                antialias: true,
+                alpha: true
+            });
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.setClearColor(0x1a1a2e, 1);
+            
+            // Add lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(15, 15, 10);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+            
+            const pointLight1 = new THREE.PointLight(0xff6b6b, 0.8, 40);
+            pointLight1.position.set(10, 8, 8);
+            scene.add(pointLight1);
+            
+            const pointLight2 = new THREE.PointLight(0x4ecdc4, 0.6, 35);
+            pointLight2.position.set(-8, 5, -8);
+            scene.add(pointLight2);
+            
+            const pointLight3 = new THREE.PointLight(0xffd700, 0.4, 30);
+            pointLight3.position.set(0, -5, 10);
+            scene.add(pointLight3);
+            
+            // Set initial camera position
+            updateCameraPosition();
+            
+            // Create surface
+            createSurface();
+            
+            // Add coordinate system
+            createCoordinateSystem();
+            
+            // Start rendering
+            animate();
+        }
+        
+        function createSurface() {
+            // Remove existing surfaces
+            if (surface) {
+                scene.remove(surface);
+            }
+            if (wireframeMesh) {
+                scene.remove(wireframeMesh);
+            }
+            
+            // Create geometry
+            const geometry = new THREE.PlaneGeometry(1, 1, resolution, resolution);
+            const vertices = geometry.attributes.position.array;
+            const colors = [];
+            
+            // Calculate surface points and colors
+            for (let i = 0; i < vertices.length; i += 3) {
+                const x = (vertices[i] * xRange);
+                const y = (vertices[i + 1] * yRange);
+                const z = Math.sin(xFreq * x + time) + Math.sin(yFreq * y + time);
+                
+                vertices[i] = x;
+                vertices[i + 1] = y;
+                vertices[i + 2] = z;
+                
+
+                const normalizedZ = (z + 2) / 4; // Normalize z from [-2,2] to [0,1]
+
+             // Define the two colors from reset button gradient
+                const color1 = new THREE.Color(0xa8edea); // Light cyan
+                const color2 = new THREE.Color(0xfed6e3); // Light pink
+
+// Interpolate between the two colors based on height
+                const color = color1.clone().lerp(color2, normalizedZ);
+                colors.push(color.r, color.g, color.b);
+            }
+            
+            geometry.attributes.position.needsUpdate = true;
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            geometry.computeVertexNormals();
+            
+            // Create materials
+            const material = new THREE.MeshPhongMaterial({
+                vertexColors: true,
+                shininess: 80,
+                transparent: true,
+                opacity: 0.9,
+                side: THREE.DoubleSide
+            });
+            
+            const wireframeMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.3
+            });
+            
+            // Create meshes
+            surface = new THREE.Mesh(geometry, material);
+            surface.castShadow = true;
+            surface.receiveShadow = true;
+            
+            wireframeMesh = new THREE.Mesh(geometry.clone(), wireframeMaterial);
+            
+            scene.add(surface);
+            if (showWireframe) {
+                scene.add(wireframeMesh);
+            }
+        }
+        
+        function createCoordinateSystem() {
+            // Remove existing axes
+            const existingAxes = scene.children.filter(child => child.userData.isAxis);
+            existingAxes.forEach(axis => scene.remove(axis));
+        }
+        
+        function updateCameraPosition() {
+            const x = cameraDistance * Math.cos(cameraAngleY) * Math.cos(cameraAngleX);
+            const y = cameraDistance * Math.sin(cameraAngleX);
+            const z = cameraDistance * Math.sin(cameraAngleY) * Math.cos(cameraAngleX);
+            
+            camera.position.set(x, y, z);
+            camera.lookAt(0, 0, 0);
+        }
+        
+        function animate() {
+            if (isAnimating) {
+                time += 0.05;
+                createSurface();
+            }
+            
+            renderer.render(scene, camera);
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        function updateSurface() {
+            xRange = parseFloat(document.getElementById('xRange').value);
+            yRange = parseFloat(document.getElementById('yRange').value);
+            xFreq = parseFloat(document.getElementById('xFreq').value);
+            yFreq = parseFloat(document.getElementById('yFreq').value);
+            resolution = parseInt(document.getElementById('resolution').value);
+            
+            createSurface();
+            createCoordinateSystem();
+        }
+        
+        // Event listeners
+        document.getElementById('update').addEventListener('click', updateSurface);
+        
+        document.getElementById('animate').addEventListener('click', () => {
+            isAnimating = !isAnimating;
+            const btn = document.getElementById('animate');
+            btn.textContent = isAnimating ? 'Pause' : 'Animate';
+            btn.style.background = isAnimating ? 
+                'linear-gradient(45deg, #ff6b6b, #ee5a52)' : 
+                'linear-gradient(45deg, #4ecdc4, #44a08d)';
+        });
+        
+        document.getElementById('wireframe').addEventListener('click', () => {
+            showWireframe = !showWireframe;
+            const btn = document.getElementById('wireframe');
+            btn.textContent = showWireframe ? 'Hide Wire' : 'Wireframe';
+            
+            if (showWireframe) {
+                scene.add(wireframeMesh);
+            } else {
+                scene.remove(wireframeMesh);
+            }
+        });
+        
+        document.getElementById('reset').addEventListener('click', () => {
+            document.getElementById('xRange').value = '6';
+            document.getElementById('yRange').value = '6';
+            document.getElementById('xFreq').value = '1';
+            document.getElementById('yFreq').value = '1';
+            document.getElementById('resolution').value = '80';
+            
+            time = 0;
+            isAnimating = false;
+            document.getElementById('animate').textContent = 'Animate';
+            document.getElementById('animate').style.background = 'linear-gradient(45deg, #4ecdc4, #44a08d)';
+            
+            updateSurface();
+        });
+        
+        // Mouse control
+        const canvas = document.getElementById('canvas');
+        
+        canvas.addEventListener('mousedown', (e) => {
+            mouseDown = true;
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (!mouseDown) return;
+            
+            const deltaX = e.clientX - mouseX;
+            const deltaY = e.clientY - mouseY;
+            
+            cameraAngleY += deltaX * 0.01;
+            cameraAngleX += deltaY * 0.01;
+            
+            // Limit vertical angle
+            cameraAngleX = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, cameraAngleX));
+            
+            updateCameraPosition();
+            
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            mouseDown = false;
+        });
+        
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            cameraDistance += e.deltaY * 0.05;
+            cameraDistance = Math.max(8, Math.min(50, cameraDistance));
+            updateCameraPosition();
+        });
+        
+        // Touch support
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 1) {
+                mouseDown = true;
+                mouseX = e.touches[0].clientX;
+                mouseY = e.touches[0].clientY;
+            }
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!mouseDown || e.touches.length !== 1) return;
+            
+            const deltaX = e.touches[0].clientX - mouseX;
+            const deltaY = e.touches[0].clientY - mouseY;
+            
+            cameraAngleY += deltaX * 0.01;
+            cameraAngleX += deltaY * 0.01;
+            
+            cameraAngleX = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, cameraAngleX));
+            
+            updateCameraPosition();
+            
+            mouseX = e.touches[0].clientX;
+            mouseY = e.touches[0].clientY;
+        });
+        
+        canvas.addEventListener('touchend', () => {
+            mouseDown = false;
+        });
+        
+        // Window resize
+        window.addEventListener('resize', () => {
+            const canvas = document.getElementById('canvas');
+            camera.aspect = canvas.clientWidth / canvas.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        });
+        
+        // Real-time parameter updates
+        ['xRange', 'yRange', 'xFreq', 'yFreq', 'resolution'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateSurface);
+        });
+        
+        // Initialize
+        initScene();
+    </script>
+</body>
+</html>
